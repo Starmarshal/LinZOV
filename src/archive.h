@@ -29,8 +29,8 @@ typedef struct {
 } ArchiveHeader;
 
 /* Function declarations */
-int create_archive(const char* dir_path, const char* archive_path, const char* password);
-int extract_archive(const char* archive_path, const char* output_dir, const char* password);
+int create_archive(const char* dir_path, const char* archive_path, const char* password, int vflag);
+int extract_archive(const char* archive_path, const char* output_dir, const char* password, int vflag);
 void list_archive_contents(const char* archive_path);
 int verify_archive(const char* archive_path);
 int is_archive_file(const char* filename);

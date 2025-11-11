@@ -1,7 +1,7 @@
 #include "archive.h"
 
 /* Create archive from directory */
-int create_archive(const char* dir_path, const char* archive_path, const char* password) {
+int create_archive(const char* dir_path, const char* archive_path, const char* password, int vflag){
 	/* Check if source directory exists */
 	struct stat dir_stat;
 	if(stat(dir_path, &dir_stat) != 0 || !S_ISDIR(dir_stat.st_mode))
@@ -43,13 +43,14 @@ int create_archive(const char* dir_path, const char* archive_path, const char* p
 	add_timestamp_to_file(archive_path);
 
 	fprintf(stdout, "Archive created successfully: %s\n", archive_path);
-	fprintf(stdout, "Total files: %d, Archive size: %lu bytes\n", arch_header.file_count, (unsigned long)arch_header.total_size);
+	if(vflag == 1)
+		fprintf(stdout, "Total files: %d, Archive size: %lu bytes\n", arch_header.file_count, (unsigned long)arch_header.total_size);
 
 	return 0;
 }
 
 /* Extract archive to directory */
-int extract_archive(const char* archive_path, const char* output_dir, const char* password) {
+int extract_archive(const char* archive_path, const char* output_dir, const char* password, int vflag){
 	/* Check if archive file exists */
 	struct stat archive_stat;
 	if(stat(archive_path, &archive_stat) != 0)
@@ -85,7 +86,8 @@ int extract_archive(const char* archive_path, const char* output_dir, const char
 		printErr("%d: Error: Archive is password protected\n", __LINE__ - 2);
 	}
 
-	fprintf(stdout, "Extracting %d files from archive...\n", arch_header.file_count);
+	if(vflag == 1)
+		fprintf(stdout, "Extracting %d files from archive...\n", arch_header.file_count);
 
 	/* Create output directory if needed */
 	if(create_directory(output_dir) != 0){
@@ -183,15 +185,18 @@ int extract_archive(const char* archive_path, const char* output_dir, const char
 		add_timestamp_to_file(full_path);
 
 		extracted_count++;
-		fprintf(stdout, "Extracted: %s (%lu bytes)\n", file_header.filename, (unsigned long)file_header.file_size);
+		if(vflag == 1)
+			fprintf(stdout, "Extracted: %s (%lu bytes)\n", file_header.filename, (unsigned long)file_header.file_size);
 	}
 
 	fclose(archive);
 
-	if(extracted_count != arch_header.file_count)
-		printErr("%d: Warning: Extracted %d out of %d files\n", __LINE__ - 1, extracted_count, arch_header.file_count);
-	else
-		printf("Successfully extracted %d files to: %s\n", extracted_count, output_dir);
+	if(extracted_count != arch_header.file_count){
+		if(vflag == 1)
+			printErr("%d: Warning: Extracted %d out of %d files\n", __LINE__ - 1, extracted_count, arch_header.file_count);
+	} else
+		if(vflag == 1)
+			printf("Successfully extracted %d files to: %s\n", extracted_count, output_dir);
 
 	return (extracted_count == arch_header.file_count) ? 0 : -1;
 }

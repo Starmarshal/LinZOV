@@ -2,7 +2,7 @@ BUILD 		= build
 ROOT		= /usr
 BIN		= $(ROOT)/bin
 SBIN		= $(ROOT)/sbin
-SRC		= src
+SRC		= ./src
 
 PWD 		= $(shell pwd)
 

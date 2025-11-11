@@ -9,4 +9,7 @@
 #include "archive.h"
 #include "cli.h"
 
+#define BUFFER 4096
+#define DEFAULT_DIR "."
+
 #endif

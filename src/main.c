@@ -2,79 +2,125 @@
 
 /* Main function */
 int main(int argc, char* argv[]) {
-    /* If no arguments, show interactive mode */
-	if (argc == 1) {
-		show_interactive_menu();
-		return 0;
-	}
-    
-	const char* command = argv[1];
-
-	/* Handle help and version flags */
-	if (strcmp(command, "--help") == 0 || strcmp(command, "-h") == 0)
+	/* If no arguments, show help */
+	if(strcmp(argv[1], "--help") == 0)
 		print_usage(argv[0]);
-	else if(strcmp(command, "--version") == 0 || strcmp(command, "-v") == 0)
+	if(strcmp(argv[1], "--version") == 0)
 		print_version();
-	else if(strcmp(command, "interactive") == 0 || strcmp(command, "i") == 0)
-		show_interactive_menu();
-    
+
+	int state = 0,/* fflag = 0, */
+	    vflag = 0;
+
+	char opt[BUFFER] = {0};
+	strcpy(opt, argv[1]);
+	for(size_t i = 0; i < strlen(opt); ++i){
+		switch(opt[i]){
+			case 'x':
+				/* extract flag */
+				state = 1;
+				break;
+			case 'c':
+				/* compress flag */
+				state = 2;
+				break;
+				/*
+			case 'f':
+				 force flag 
+				fflag = 1;
+				break;
+				*/
+			case 'l':
+				/* list flag */
+				state = 3;
+				break;
+			case 'v':
+				/* verbose flag */
+				vflag = 1;
+				break;
+			case 'V':
+				/* Version flag */
+				print_version();
+				break;
+			case 'e':
+				/* verify flag */
+				state = 4;
+				break;
+			case 'i':
+				/* info flag */
+				state = 5;
+				break;
+			default:
+				printf("unknown flag: %c", opt[i]);
+				break;
+		}
+	}
+
+	char directory[BUFFER];
+	if(argc >= 3 && state == 1)
+		strcpy(directory, ".");
+	else
+		strcpy(directory, argv[3]);
+	const char* archive = argv[2];
+
 	/* Handle archive commands */
-	if(strcmp(command, "create") == 0){
-		if (argc < 4)
-		printrr("%d: Error: Missing arguments for create command\n \
-				Usage: %s create <directory> <archive>\n", __LINE__, argv[0]);
-        
-        const char* directory = argv[2];
-        const char* archive = argv[3];
-        
-        fprintf(stdout, "Creating archive '%s' from directory '%s'\n", archive, directory);
-        fprintf(stdout, "Using PPM compression algorithm...\n");
-        
-        if(create_archive(directory, archive, NULL) != 0)
-		printrr("%d: Error: Failed to create archive\n", __LINE__ - 1);
-        
-        fprintf(stdout, "Archive created successfully!\n");
-        
-	} else if(strcmp(command, "extract") == 0){
-		if(argc < 4)
-			printrr("%d: Error: Missing arguments for extract command\n \
-			Usage: %s extract <archive> <directory>\n", __LINE__, argv[0]);
-        
-		const char* archive = argv[2];
-		const char* directory = argv[3];
+	switch(state){
+		case 1:
+			if(argc < 3)
+				printrr("%d: Error: Missing arguments for extract command\n \
+				Usage: %s x <archive>\n", __LINE__, argv[0]);
+
+			if(vflag == 1)
+				printf("Extracting archive: %s to directory %s\n", archive, directory);
+			
+			if(extract_archive(archive, directory, NULL, vflag) != 0)
+				printrr("%d: Error: Failed to extract archive\n", __LINE__);
+			
+			if(vflag == 1)
+				fprintf(stdout, "Archive extracted successfully!\n");
+			break;
+		case 2:
+			if(argc < 4)
+				printrr("%d: Error: Missing arguments for create command\n \
+					Usage: %s c <directory> <archive>\n", __LINE__, argv[0]);
+			
+			if(vflag == 1)
+				fprintf(stdout, "Creating archive '%s' from directory '%s'\n  \
+					Using PPM compression algorithm...\n", archive, directory);
+			
+			if(create_archive(directory, archive, NULL, vflag) != 0)
+				printrr("%d: Error: Failed to create archive\n", __LINE__ - 1);
+			
+			if(vflag == 1)
+				fprintf(stdout, "Archive created successfully!\n");
+			break;
+		case 3:
+			if (argc < 3)
+				printrr("%d: Error: Missing archive file for list command\n \
+				Usage: %s l <archive>\n", __LINE__, argv[0]);
 		
-		printf("Extracting archive '%s' to directory '%s'\n", archive, directory);
+			list_archive_contents(argv[2]);
+			break;
+        
+		case 4:
+			if(argc < 3)
+				printrr("%d: Error: Missing archive file for verify command\n \
+				Usage: %s e <archive>\n", __LINE__, argv[0]);
 		
-		if(extract_archive(archive, directory, NULL) != 0)
-			printrr("%d: Error: Failed to extract archive\n", __LINE__);
+			if(verify_archive(argv[2]) != 0)
+				printrr("%d: Archive verification failed!\n", __LINE__);
+			break;
+        
+		case 5:
+			if(argc < 3)
+				printrr("%dError: Missing archive file for info command\n \
+				Usage: %s i <archive>\n", argv[0]);
+			
+			show_archive_info(argv[2]);
+			break;
 		
-		fprintf(stdout, "Archive extracted successfully!\n");
-        
-	} else if(strcmp(command, "list") == 0){
-		if (argc < 3)
-			printrr("%d: Error: Missing archive file for list command\n \
-			Usage: %s list <archive>\n", __LINE__, argv[0]);
-        
-        list_archive_contents(argv[2]);
-        
-	} else if(strcmp(command, "verify") == 0){
-		if(argc < 3)
-			printrr("%d: Error: Missing archive file for verify command\n \
-			Usage: %s verify <archive>\n", __LINE__, argv[0]);
-        
-        if(verify_archive(argv[2]) != 0)
-		printrr("%d: Archive verification failed!\n", __LINE__);
-        
-    } else if(strcmp(command, "info") == 0){
-        if(argc < 3)
-            printrr("%dError: Missing archive file for info command\n \
-            Usage: %s info <archive>\n", argv[0]);
-        
-        show_archive_info(argv[2]);
-        
-    } else
-        fprintf(stderr, "Error: Unknown command '%s'\n \
-        Use '%s --help' for usage information.\n", command, argv[0]);
-    
+		default:
+			printErr("Error: Unknown command \'%s\'");
+			break;
+	}
     return 0;
 }
