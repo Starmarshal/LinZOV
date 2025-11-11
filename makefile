@@ -29,7 +29,7 @@ help:
 
 install:
 	@echo "Link archiver as zov"
-	cp $(PWD)/$(BUILD)/$(NAME) $(BIN)/zov
+	ln -s $(PWD)/$(BUILD)/$(NAME) $(BIN)/zov
 
 .PHONY: clean uninstall
 
