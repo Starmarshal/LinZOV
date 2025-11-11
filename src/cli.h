@@ -11,6 +11,4 @@
 int print_usage(const char* program_name);
 int print_version();
 int show_archive_info(const char* archive_path);
-void interactive_create();
-void show_interactive_menu();
 #endif

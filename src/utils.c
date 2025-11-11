@@ -2,7 +2,7 @@
 
 /* Process directory recursively */
 void process_directory(const char* base_path, const char* rel_path, 
-                      FILE* archive, uint16_t* file_count, uint64_t* total_size) {
+                      FILE* archive, uint16_t* file_count, uint64_t* total_size, int vflag) {
 	char full_path[PATH_MAX];
 	if(strlen(rel_path) == 0)
 		snprintf(full_path, sizeof(full_path), "%s", base_path);
@@ -41,10 +41,10 @@ void process_directory(const char* base_path, const char* rel_path,
 
 		if(S_ISDIR(stat_buf.st_mode))
 			/* Recursively process subdirectory */
-			process_directory(base_path, new_rel_path, archive, file_count, total_size);
+			process_directory(base_path, new_rel_path, archive, file_count, total_size, vflag);
 		else if(S_ISREG(stat_buf.st_mode))
 			/* Process regular file */
-			process_single_file(entry_full_path, new_rel_path, archive, file_count, total_size, &stat_buf);
+			process_single_file(entry_full_path, new_rel_path, archive, file_count, total_size, &stat_buf, vflag);
 		else
 			printErr("%d: Error while handling files: %s", __LINE__ - 7, strerror(errno));
 	}
@@ -55,7 +55,7 @@ void process_directory(const char* base_path, const char* rel_path,
 /* Process single file for archiving */
 void process_single_file(const char* filepath, const char* rel_path, 
                         FILE* archive, uint16_t* file_count,
-                        uint64_t* total_size, struct stat* stat_buf) {
+                        uint64_t* total_size, struct stat* stat_buf, int vflag) {
 	FILE* file = fopen(filepath, "rb");
 	if(!file)
 		printErr("%d: Warning: Cannot open file %s: %s\n", __LINE__ - 2, filepath, strerror(errno));
@@ -94,20 +94,17 @@ void process_single_file(const char* filepath, const char* rel_path,
 	header.offset = *total_size;
 	header.algorithm = 1; /* PPM */
     
-	/* Try compression only for files larger than 100 bytes */
 	uint8_t* compressed_data = NULL;
 	size_t compressed_size = 0;
-	int should_compress = should_compress_file(filepath) && file_size > 1;
 
-	if(should_compress)
-		compressed_size = ppm_compress(file_data, file_size, &compressed_data);
+	compressed_size = ppm_compress(file_data, file_size, &compressed_data);
     
 	/* Decide whether to use compressed or original data */
 	if(compressed_data && compressed_size > 0 && compressed_size < file_size){
 		header.file_size = compressed_size;
 		header.is_compressed = 1;
-		fprintf(stdout, "Processed: %s (PPM) %zu -> %zu bytes\n", 
-		       rel_path, file_size, compressed_size);
+		if(vflag == 1)
+			fprintf(stdout, "Processed: %s (PPM) %zu -> %zu bytes\n", rel_path, file_size, compressed_size);
 	} else {
 		header.file_size = file_size;
 		header.is_compressed = 0;
@@ -116,7 +113,8 @@ void process_single_file(const char* filepath, const char* rel_path,
 		compressed_data = file_data;
 		compressed_size = file_size;
 		file_data = NULL;
-		fprintf(stdout, "Processed: %s (store) %zu bytes\n", rel_path, file_size);
+		if(vflag == 1 )
+			fprintf(stdout, "Processed: %s (store) %zu bytes\n", rel_path, file_size);
 	}
     
 	/* Write to archive */
@@ -168,24 +166,4 @@ void add_timestamp_to_file(const char* filepath) {
 	new_times.actime = time(NULL);   /* access time */
 	new_times.modtime = time(NULL);  /* modification time */
 	utime(filepath, &new_times);
-}
-
-/* Check if file should be compressed */
-int should_compress_file(const char* filename) {
-	const char* ext = strrchr(filename, '.');
-	if(!ext) return 1;
-
-	/* Don't compress already compressed formats */
-	const char* compressed_exts[] = {
-		".zip", ".gz", ".bz2", ".xz", ".7z", ".rar", ".tar",
-		".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", 
-		".mp3", ".mp4", ".avi", ".mkv", ".flac", ".wav",
-		".pdf", ".doc", ".docx", ".xls", ".ppt",
-		NULL
-	};
-
-	for(int i = 0; compressed_exts[i]; i++)
-		if(strcasecmp(ext, compressed_exts[i]) == 0)
-			return 0;
-	return 1;
 }

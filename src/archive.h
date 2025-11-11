@@ -17,12 +17,12 @@
 #include "ppm.h"
 #include "utils.h"
 
-#define MAGIC "ZOVv2.0"
+#define MAGIC "HxKl1488"
 #define ALGO_PPM 1
 
 /* Archive header structure */
 typedef struct {
-    char magic[8];            /* magic number "ZOVv2.0" */
+    char magic[8];            /* magic number*/
     uint16_t file_count;      /* number of files */
     uint64_t total_size;      /* total archive size */
     uint8_t has_password;     /* password protection flag */
@@ -34,12 +34,5 @@ int extract_archive(const char* archive_path, const char* output_dir, const char
 void list_archive_contents(const char* archive_path);
 int verify_archive(const char* archive_path);
 int is_archive_file(const char* filename);
-
-/* Utility functions */
-void process_directory(const char* base_path, const char* rel_path, 
-                      FILE* archive, uint16_t* file_count, uint64_t* total_size);
-int create_directory(const char* path);
-int create_parent_dirs(const char* filepath);
-int should_compress_file(const char* filename);
 
 #endif

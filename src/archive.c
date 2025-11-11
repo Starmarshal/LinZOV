@@ -24,8 +24,9 @@ int create_archive(const char* dir_path, const char* archive_path, const char* p
 	}
 
 	/* Process directory recursively */
-	fprintf(stdout, "Scanning directory: %s\n", dir_path);
-	process_directory(dir_path, "", archive, &arch_header.file_count, &arch_header.total_size);
+	if(vflag == 1)
+		fprintf(stdout, "Scanning directory: %s\n", dir_path);
+	process_directory(dir_path, "", archive, &arch_header.file_count, &arch_header.total_size, vflag);
 
 	if(arch_header.file_count == 0)
 		printErr("%d: Warning: No files found to archive\n", __LINE__ - 1);
@@ -211,7 +212,7 @@ void list_archive_contents(const char* archive_path) {
 
 	if(archive_size < (long)sizeof(ArchiveHeader)){
 		fclose(archive);
-		printErr("%d: Error: Archive file is too small or empty\n", __LINE__ - 6);
+		printErr("%d: Error: Archive file is empty\n", __LINE__ - 4);
 	}
 
 	ArchiveHeader arch_header;
