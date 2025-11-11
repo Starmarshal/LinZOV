@@ -97,7 +97,7 @@ void process_single_file(const char* filepath, const char* rel_path,
 	/* Try compression only for files larger than 100 bytes */
 	uint8_t* compressed_data = NULL;
 	size_t compressed_size = 0;
-	int should_compress = should_compress_file(filepath) && file_size > 100;
+	int should_compress = should_compress_file(filepath) && file_size > 1;
 
 	if(should_compress)
 		compressed_size = ppm_compress(file_data, file_size, &compressed_data);

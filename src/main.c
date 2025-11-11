@@ -3,6 +3,8 @@
 /* Main function */
 int main(int argc, char* argv[]) {
 	/* If no arguments, show help */
+	if(argc <= 2)
+		printErr("Usage: zov <flags> <argument> ...");
 	if(strcmp(argv[1], "--help") == 0)
 		print_usage(argv[0]);
 	if(strcmp(argv[1], "--version") == 0)
@@ -58,8 +60,10 @@ int main(int argc, char* argv[]) {
 	char directory[BUFFER];
 	if(argc >= 3 && state == 1)
 		strcpy(directory, ".");
-	else
+	else if(state == 2)
 		strcpy(directory, argv[3]);
+	else
+		strcpy(directory, argv[2]);
 	const char* archive = argv[2];
 
 	/* Handle archive commands */

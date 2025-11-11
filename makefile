@@ -16,7 +16,7 @@ CC 	 	= gcc
 all: 		build
 files: 		$(BIN) $(SBIN)
 
-build: 		$(FOR_CC)
+build: $(FOR_CC)
 	@if [ ! -d $(BUILD) ]; then \
 		echo "Creating local build"; \
 		mkdir build; fi
