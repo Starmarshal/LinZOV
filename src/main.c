@@ -4,7 +4,7 @@
 int main(int argc, char* argv[]) {
 	/* If no arguments, show help */
 	if(argc <= 2)
-		printErr("Usage: zov <flags> <argument> ...");
+		printErr("Usage: zov <flags> <argument> ...\n");
 	if(strcmp(argv[1], "--help") == 0)
 		print_usage(argv[0]);
 	if(strcmp(argv[1], "--version") == 0)
