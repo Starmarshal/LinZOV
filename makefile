@@ -1,8 +1,10 @@
-BUILD 		= ./build
-ROOT		= /usr/
+BUILD 		= build
+ROOT		= /usr
 BIN		= $(ROOT)/bin
 SBIN		= $(ROOT)/sbin
-SRC		= ./src
+SRC		= src
+
+PWD 		= $(shell pwd)
 
 NAME		= archiver
 PROG		:= $(BUILD)/$(NAME)
@@ -25,14 +27,14 @@ help:
 	@echo "make to build into ./build"
 	@echo "make instal as root to install ZOV"
 
-intstall:
+install:
 	@echo "Link archiver as zov"
-	ln -s $(PWD)/archiver /usr/bin/zov
+	ln -s $(PWD)/$(BUILD)/$(NAME) $(BIN)/zov
 
 .PHONY: clean uninstall
 
 clean:
-	rm -rf build
+	rm -rf $(BUILD)
 
 uninstall:
-	rm -rf /usr/bin/zov
+	rm -rf $(BIN)/zov
