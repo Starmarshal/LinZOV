@@ -266,7 +266,7 @@ int is_archive_file(const char* filename) {
 	if (!filename) return 0;
 
 	const char* ext = strrchr(filename, '.');
-	return (ext && (strcmp(ext, ".arc") == 0 || strcmp(ext, ".ARCH") == 0));
+	return (ext && (strcmp(ext, ".zov") == 0 || strcmp(ext, ".fem") == 0));
 }
 
 /* Verify archive integrity */
