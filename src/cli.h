@@ -8,6 +8,10 @@
 
 #include "archive.h"
 
+/* defines */
+#define VERSION "2.2.8"
+#define BUILD_DATE __DATE__
+
 int print_usage(const char* program_name);
 int print_version();
 int show_archive_info(const char* archive_path);

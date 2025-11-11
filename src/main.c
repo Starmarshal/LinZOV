@@ -7,11 +7,8 @@ int main(int argc, char* argv[]) {
 		print_usage(argv[0]);
 	if(strcmp(argv[1], "--version") == 0)
 		print_version();
-	if(argc <= 2)
-		printErr("Usage: zov <flags> <argument> ...\n");
 
-	int state = 0,/* fflag = 0, */
-	    vflag = 0;
+	int state = 0, vflag = 0;
 
 	char opt[BUFFER] = {0};
 	strcpy(opt, argv[1]);
@@ -25,12 +22,6 @@ int main(int argc, char* argv[]) {
 				/* compress flag */
 				state = 2;
 				break;
-				/*
-			case 'f':
-				 force flag 
-				fflag = 1;
-				break;
-				*/
 			case 'l':
 				/* list flag */
 				state = 3;
@@ -40,9 +31,8 @@ int main(int argc, char* argv[]) {
 				vflag = 1;
 				break;
 			case 'V':
-				/* Version flag */
+				/* version flag */
 				print_version();
-				break;
 			case 'e':
 				/* verify flag */
 				state = 4;
@@ -56,6 +46,9 @@ int main(int argc, char* argv[]) {
 				break;
 		}
 	}
+
+	if(argc <= 2)
+		printErr("Usage: zov <flags> <argument> ...\n");
 
 	char directory[BUFFER];
 	if(argc >= 3 && state == 1)

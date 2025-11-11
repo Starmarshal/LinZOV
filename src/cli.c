@@ -6,12 +6,13 @@ int print_usage(const char* program_name){
 	fprintf(stdout, "Built: %s\n\n", BUILD_DATE);
 	fprintf(stdout, "Usage: %s <command> [arguments]\n\n", program_name);
 	fprintf(stdout, "Commands:\n");
-	fprintf(stdout, "  c <directory> <archive>     Create archive from directory\n");
-	fprintf(stdout, "  e <archive> <directory>    Extract archive to directory\n");
+	fprintf(stdout, "  c <archive>  <directory>    Create archive from directory\n");
+	fprintf(stdout, "  x <archive>  <directory>    Extract archive to directory\n");
 	fprintf(stdout, "  l <archive>                   List archive contents\n");
-	fprintf(stdout, "  v <archive>                 Verify archive integrity\n");
+	fprintf(stdout, "  e <archive>                 Verify archive integrity\n");
 	fprintf(stdout, "  i <archive>                   Show archive information\n\n");
-	fprintf(stdout, "  v, --version	                   Show version information\n\n");
+	fprintf(stdout, "  v 	                   	Verbose\n\n");
+	fprintf(stdout, "  V, --version	                   Show version information\n\n");
 	fprintf(stdout, "Options:\n");
 	fprintf(stdout, "  h	                      Show this help message\n");
 	fprintf(stdout, "Examples:\n");
@@ -20,7 +21,7 @@ int print_usage(const char* program_name){
 
 /* Print version information */
 int print_version(){
-	fprintf(stdout, "Archiver v%s\n", VERSION);
+	fprintf(stdout, "ZOV v%s\n", VERSION);
 	fprintf(stdout, "A file archiver with PPM compression algorithm\n");
 	fprintf(stdout, "Built by POSIX %s\n", BUILD_DATE);
 	fprintf(stdout, "License: GNU GPL v3\n");
@@ -45,7 +46,7 @@ int show_archive_info(const char* archive_path){
 		printErr("%d: Error: Cannot read archive header\n", __LINE__ - 2);
 	}
 
-	if(memcmp(arch_header.magic, "ARCHv1.0", 8) != 0){
+	if(memcmp(arch_header.magic, MAGIC, 8) != 0){
 		fclose(archive);
 		printErr("%d: Error: Not a valid archive file\n", __LINE__ - 2);
 	}
@@ -54,7 +55,6 @@ int show_archive_info(const char* archive_path){
 	fprintf(stdout, "====================\n");
 	fprintf(stdout, "File: %s\n", archive_path);
 	fprintf(stdout, "Size: %ld bytes\n", archive_size);
-	fprintf(stdout, "Format: ARCHv1.0\n");
 	fprintf(stdout, "File count: %d\n", arch_header.file_count);
 	fprintf(stdout, "Total archive size: %lu bytes\n", (unsigned long)arch_header.total_size);
 	fprintf(stdout, "Password protected: %s\n", arch_header.has_password ? "yes" : "no");

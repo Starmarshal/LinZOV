@@ -9,8 +9,6 @@
 #include <stdint.h>
 
 /* defines */
-#define VERSION "1.0"
-#define BUILD_DATE __DATE__
 
 #define SIZE(arr) (sizeof(arr) / sizeof(arr[0]))
 

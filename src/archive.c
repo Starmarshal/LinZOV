@@ -278,27 +278,24 @@ int verify_archive(const char* archive_path) {
 
 	long int archive_size = getFileSize(archive);
 
-	if (archive_size < (long)sizeof(ArchiveHeader)) {
-	fprintf(stderr, "Error: Archive file is too small\n");
-	fclose(archive);
-	return -1;
+	if(archive_size < (long)sizeof(ArchiveHeader)){
+		fclose(archive);
+		printErr("%d: Error: Archive file is too small\n", __LINE__ - 2);
 	}
 
 	ArchiveHeader arch_header;
-	if (fread(&arch_header, sizeof(ArchiveHeader), 1, archive) != 1) {
-	fprintf(stderr, "Error: Cannot read archive header\n");
-	fclose(archive);
-	return -1;
+	if(fread(&arch_header, sizeof(ArchiveHeader), 1, archive) != 1){
+		fclose(archive);
+		printErr("%d: Error: Cannot read archive header\n", __LINE__ - 2);
 	}
 
-	if (memcmp(arch_header.magic, MAGIC, 8) != 0) {
-	fprintf(stderr, "Error: Invalid archive format\n");
-	fclose(archive);
-	return -1;
+	if(memcmp(arch_header.magic, MAGIC, 8) != 0){
+		fclose(archive);
+		printErr("%d: Error: Invalid archive format\n", __LINE__ - 2);
 	}
 
-	printf("Verifying archive: %s\n", archive_path);
-	printf("Files in archive: %d\n", arch_header.file_count);
+	fprintf(stdout, "Verifying archive: %s\n", archive_path);
+	fprintf(stdout, "Files in archive: %d\n", arch_header.file_count);
     
 	int valid_files = 0;
 	uint64_t current_offset = sizeof(ArchiveHeader);
