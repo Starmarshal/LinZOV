@@ -13,11 +13,3 @@ int printErr(char *msg, ...){
 
 	exit(errno);
 }
-
-long getFileSize(FILE *fd){
-	/* Check archive size */
-	fseek(fd, 0, SEEK_END);
-	long archive_size = ftell(fd);
-	fseek(fd, 0, SEEK_SET);
-	return archive_size;
-}

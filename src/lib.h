@@ -11,6 +11,5 @@
 #define BUFFER 4096
 
 int printErr(char *msg, ...);
-long getFileSize(FILE *archive);
 
 #endif

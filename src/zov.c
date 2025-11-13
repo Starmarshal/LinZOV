@@ -75,7 +75,8 @@ int show_archive_info(const char* archive_path){
 /* Main function */
 int main(int argc, char* argv[]) {
 	if(argc == 1){
-		fprintf(stdout, "%s: You must specify one of the 'cxleivV' options.\nTry '%s --help' or '%s h' for more information.\n", argv[0], argv[0], argv[0]);
+		fprintf(stdout, "%s: You must specify one of the 'cxleivV' options.\n \
+				Try '%s --help' or '%s h' for more information.\n", argv[0], argv[0], argv[0]);
 		return 0;
 	}
 	/* If no arguments, show help */
@@ -123,7 +124,8 @@ int main(int argc, char* argv[]) {
 				print_usage(argv[0]);
 				break;
 			default:
-				printf("unknown flag: %c", opt[i]);
+				fprintf(stdout, "unknown flag: %c", opt[i]);
+				return 0;
 				break;
 		}
 	}

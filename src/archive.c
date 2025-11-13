@@ -11,6 +11,14 @@ static void add_timestamp_to_file(const char* filepath);
 static size_t ppm_compress(const uint8_t* input, size_t input_size, uint8_t** output);
 static size_t ppm_decompress(const uint8_t* input, size_t input_size, uint8_t** output);
 
+long getFileSize(FILE *fd){
+	/* Check archive size */
+	fseek(fd, 0, SEEK_END);
+	long archive_size = ftell(fd);
+	fseek(fd, 0, SEEK_SET);
+	return archive_size;
+}
+
 /* Create archive from directory */
 int create_archive(const char* dir_path, const char* archive_path, const char* password, int vflag){
 	/* Check if source directory exists */

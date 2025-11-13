@@ -56,6 +56,7 @@ typedef struct {
 } ArchiveHeader;
 
 /* Function declarations */
+long getFileSize(FILE *archive);
 int create_archive(const char* dir_path, const char* archive_path, const char* password, int vflag);
 int extract_archive(const char* archive_path, const char* output_dir, const char* password, int vflag);
 void list_archive_contents(const char* archive_path);

@@ -6,7 +6,7 @@ SRC		= ./src
 
 PWD 		= $(shell pwd)
 
-NAME		= archiver
+NAME		= zov
 PROG		:= $(BUILD)/$(NAME)
 FOR_CC		:= $(shell find -wholename '$(SRC)/*.c')
 CFLAGS		= -O3 -pedantic -Wall -Wextra -std=gnu99 -fomit-frame-pointer -fstack-protector-strong -Werror=format-security -o
@@ -29,9 +29,9 @@ help:
 
 install:
 	@echo "Link archiver as zov"
-	ln -s $(PWD)/$(BUILD)/$(NAME) $(BIN)/zov
+	ln -s $(PWD)/$(BUILD)/$(NAME) $(BIN)/$(NAME)
 
-.PHONY: clean uninstall build
+.PHONY: clean uninstall
 
 clean:
 	rm -rf $(BUILD)
