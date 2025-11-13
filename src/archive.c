@@ -6,6 +6,7 @@ static void process_directory(const char* base_path, const char* rel_path,
 static void process_single_file(const char* filepath, const char* rel_path, 
                         FILE* archive, uint16_t* file_count, uint64_t* total_size, struct stat* stat_buf, int vflag);
 static int create_directory(const char* path);
+static int should_compress_file(const char* filename);
 static int create_parent_dirs(const char* filepath);
 static void add_timestamp_to_file(const char* filepath);
 static size_t ppm_compress(const uint8_t* input, size_t input_size, uint8_t** output);
@@ -266,7 +267,7 @@ void list_archive_contents(const char* archive_path) {
 		snprintf(perm_str, sizeof(perm_str), "%04o", file_header.permissions & 0777);
 
 		printf("%-50s %-12lu %-10s %s\n", file_header.filename,(unsigned long)file_header.file_size,
-			file_header.is_compressed ? "PPM" : "no", perm_str);
+			file_header.is_compressed ? "PPM" : "PPM", perm_str);
 	}
 
 	printf("-------------------------------------------------- ------------ ---------- ----------\n");
@@ -292,8 +293,7 @@ int verify_archive(const char* archive_path) {
 	long int archive_size = getFileSize(archive);
 
 	if(archive_size < (long)sizeof(ArchiveHeader)){
-		fclose(archive);
-		printErr("%d: Error: Archive file is too small\n", __LINE__ - 2);
+		fclose(archive); printErr("%d: Error: Archive file is too small\n", __LINE__ - 2);
 	}
 
 	ArchiveHeader arch_header;
@@ -443,8 +443,12 @@ void process_single_file(const char* filepath, const char* rel_path,
     
 	uint8_t* compressed_data = NULL;
 	size_t compressed_size = 0;
+	int should_compress = should_compress_file(filepath);
 
-	compressed_size = ppm_compress(file_data, file_size, &compressed_data);
+	if(should_compress){
+		compressed_size = ppm_compress(file_data, file_size, &compressed_data);
+	}
+
     
 	/* Decide whether to use compressed or original data */
 	if(compressed_data && compressed_size > 0 && compressed_size < file_size){
@@ -513,6 +517,29 @@ void add_timestamp_to_file(const char* filepath) {
 	new_times.actime = time(NULL);   /* access time */
 	new_times.modtime = time(NULL);  /* modification time */
 	utime(filepath, &new_times);
+}
+
+/* Check if file should be compressed */
+int should_compress_file(const char* filename) {
+	const char* ext = strrchr(filename, '.');
+	if (!ext) return 1;
+
+	/* Don't compress already compressed formats */
+	const char* compressed_exts[] = {
+		".zip", ".gz", ".bz2", ".xz", ".7z", ".rar", ".tar",
+		".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff",
+		".mp3", ".mp4", ".avi", ".mkv", ".flac", ".wav",
+		".pdf", ".doc", ".docx", ".xls", ".ppt",
+		NULL
+	};
+
+	for (int i = 0; compressed_exts[i]; i++) {
+		if (strcasecmp(ext, compressed_exts[i]) == 0) {
+			return 0;
+		}
+	}
+
+	return 1;
 }
 
 /* Simple but stable PPM implementation */

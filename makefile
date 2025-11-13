@@ -31,7 +31,7 @@ install:
 	@echo "Link archiver as zov"
 	ln -s $(PWD)/$(BUILD)/$(NAME) $(BIN)/zov
 
-.PHONY: clean uninstall
+.PHONY: clean uninstall build
 
 clean:
 	rm -rf $(BUILD)

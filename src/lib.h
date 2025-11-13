@@ -8,6 +8,8 @@
 #include <errno.h>
 #include <stdint.h>
 
+#define BUFFER 4096
+
 int printErr(char *msg, ...);
 long getFileSize(FILE *archive);
 
