@@ -25,34 +25,34 @@
 
 /* File header structure */
 typedef struct {
-    char filename[256];       /* original file name */
-    uint64_t file_size;       /* file size in bytes */
-    uint32_t permissions;     /* file permissions */
-    uint64_t offset;          /* offset in archive */
-    uint8_t is_compressed;    /* compression flag */
-    uint8_t algorithm;        /* compression algorithm */
+	char filename[256];       /* original file name */
+	uint64_t file_size;       /* file size in bytes */
+	uint32_t permissions;     /* file permissions */
+	uint64_t offset;          /* offset in archive */
+	uint8_t is_compressed;    /* compression flag */
+	uint8_t algorithm;        /* compression algorithm */
 } FileHeader;
 
 /* PPM context structure */
 typedef struct PPMNode {
-    uint8_t symbol;
-    uint32_t count;
-    struct PPMNode* next;
+	uint8_t symbol;
+	uint32_t count;
+	struct PPMNode* next;
 } PPMNode;
 
 /* PPM model structure */
 typedef struct {
-    PPMNode** contexts;
-    int order;
-    size_t memory_limit;
+	PPMNode** contexts;
+	int order;
+	size_t memory_limit;
 } PPMModel;
 
 /* Archive header structure */
 typedef struct {
-    char magic[8];            /* magic number*/
-    uint16_t file_count;      /* number of files */
-    uint64_t total_size;      /* total archive size */
-    uint8_t has_password;     /* password protection flag */
+	char magic[8];            /* magic number*/
+	uint16_t file_count;      /* number of files */
+	uint64_t total_size;      /* total archive size */
+	uint8_t has_password;     /* password protection flag */
 } ArchiveHeader;
 
 /* Function declarations */
