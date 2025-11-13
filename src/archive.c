@@ -363,11 +363,8 @@ void process_directory(const char* base_path, const char* rel_path,
 			snprintf(new_rel_path, sizeof(new_rel_path), "%s/%s", rel_path, entry->d_name);
 
 		/* Build full path */
-		char entry_full_path[PATH_MAX];
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wformat-truncation"
-		snprintf(entry_full_path, sizeof(entry_full_path), "%s/%s", base_path, new_rel_path);
-#pragma GCC diagnostic pop
+		char entry_full_path[PATH_MAX*2];
+		snprintf(entry_full_path, sizeof(entry_full_path)*2, "%s/%s", base_path, new_rel_path);
 
 		struct stat stat_buf;
 		if(stat(entry_full_path, &stat_buf) != 0){
@@ -425,6 +422,7 @@ void process_single_file(const char* filepath, const char* rel_path,
     
 	/* Prepare file header */
 	FileHeader header = {0};
+
 	strncpy(header.filename, rel_path, sizeof(header.filename) - 1);
 	header.permissions = stat_buf->st_mode;
 	header.offset = *total_size;

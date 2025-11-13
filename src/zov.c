@@ -74,6 +74,10 @@ int show_archive_info(const char* archive_path){
 
 /* Main function */
 int main(int argc, char* argv[]) {
+	if(argc == 1){
+		fprintf(stdout, "%s: You must specify one of the 'cxleivV' options.\nTry '%s --help' or '%s h' for more information.\n", argv[0], argv[0], argv[0]);
+		return 0;
+	}
 	/* If no arguments, show help */
 	if(strcmp(argv[1], "--help") == 0)
 		print_usage(argv[0]);
@@ -114,6 +118,10 @@ int main(int argc, char* argv[]) {
 				/* info flag */
 				state = 5;
 				break;
+			case 'h':
+				/* print usage */
+				print_usage(argv[0]);
+				break;
 			default:
 				printf("unknown flag: %c", opt[i]);
 				break;
@@ -123,7 +131,7 @@ int main(int argc, char* argv[]) {
 	if(argc <= 2)
 		printErr("Usage: zov <flags> <argument> ...\n");
 
-	char directory[BUFFER];
+	char directory[BUFFER] = {0};
 	if(argc <= 3 && state == 1)
 		strcpy(directory, ".");
 	else if(argc == 3)
