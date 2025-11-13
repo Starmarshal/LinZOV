@@ -1,5 +1,5 @@
-#ifndef CLI_H
-#define CLI_H
+#ifndef ARCHIVER_H
+#define ARCHIVER_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,10 +9,9 @@
 #include "archive.h"
 
 /* defines */
+#define BUFFER 4096
+#define DEFAULT_DIR "."
 #define VERSION "2.2.8"
 #define BUILD_DATE __DATE__
 
-int print_usage(const char* program_name);
-int print_version();
-int show_archive_info(const char* archive_path);
 #endif

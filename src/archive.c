@@ -1,5 +1,18 @@
 #include "archive.h"
 
+static int is_archive_file(const char* filename);
+static void process_directory(const char* base_path, const char* rel_path, 
+                      FILE* archive, uint16_t* file_count, uint64_t* total_size, int vflag);
+static void process_single_file(const char* filepath, const char* rel_path, 
+                        FILE* archive, uint16_t* file_count, uint64_t* total_size, struct stat* stat_buf, int vflag);
+static int create_directory(const char* path);
+static int create_parent_dirs(const char* filepath);
+static void add_timestamp_to_file(const char* filepath);
+static size_t ppm_compress(const uint8_t* input, size_t input_size, uint8_t** output);
+static size_t ppm_decompress(const uint8_t* input, size_t input_size, uint8_t** output);
+static PPMModel* ppm_create_model(int order, size_t memory_limit);
+static void ppm_free_model(PPMModel* model);
+
 /* Create archive from directory */
 int create_archive(const char* dir_path, const char* archive_path, const char* password, int vflag){
 	/* Check if source directory exists */
@@ -102,13 +115,13 @@ int extract_archive(const char* archive_path, const char* output_dir, const char
 	for(int i = 0; i < arch_header.file_count; i++){
 		memset(&file_header, 0, sizeof(FileHeader));
 		if(fread(&file_header, sizeof(FileHeader), 1, archive) != 1){
-			printErrNE("%d: Error: Cannot read file header for file %d\n", __LINE__ - 1, i);
+			fprintf(stderr, "%d: Error: Cannot read file header for file %d\n", __LINE__ - 1, i);
 			break;
 		}
 
 		/* Validate file header */
 		if (file_header.file_size == 0) {
-			printErrNE("%d: Warning: Skipping zero-length file: %s\n", __LINE__ - 1, file_header.filename);
+			fprintf(stderr, "%d: Warning: Skipping zero-length file: %s\n", __LINE__ - 1, file_header.filename);
 			continue;
 		}
 
@@ -130,7 +143,7 @@ int extract_archive(const char* archive_path, const char* output_dir, const char
 
 		FILE* output_file = fopen(full_path, "wb");
 		if(!output_file){
-			printErrNE("%d: Warning: Cannot create file %s: %s\n", __LINE__ - 2, full_path, strerror(errno));
+			fprintf(stderr, "%d: Warning: Cannot create file %s: %s\n", __LINE__ - 2, full_path, strerror(errno));
 			fseek(archive, file_header.file_size, SEEK_CUR);
 			continue;
 		}
@@ -138,14 +151,14 @@ int extract_archive(const char* archive_path, const char* output_dir, const char
 		/* Read compressed data */
 		uint8_t* compressed_data = calloc(file_header.file_size, sizeof(uint8_t));
 		if(!compressed_data){
-			printErrNE("%d: Error: Memory allocation failed for %s\n", __LINE__ - 1, file_header.filename);
+			fprintf(stderr, "%d: Error: Memory allocation failed for %s\n", __LINE__ - 1, file_header.filename);
 			fclose(output_file);
 			fseek(archive, file_header.file_size, SEEK_CUR);
 			continue;
 		}
 
 		if(fread(compressed_data, 1, file_header.file_size, archive) != file_header.file_size){
-			printErrNE("%d: Error: Cannot read file data for %s\n", __LINE__ - 1, file_header.filename);
+			fprintf(stderr, "%d: Error: Cannot read file data for %s\n", __LINE__ - 1, file_header.filename);
 			free(compressed_data);
 			fclose(output_file);
 			continue;
@@ -164,13 +177,13 @@ int extract_archive(const char* archive_path, const char* output_dir, const char
 			} else {
 				/* Fallback: write compressed data if decompression fails */
 				fwrite(compressed_data, 1, file_header.file_size, output_file);
-				printErrNE("%d: Warning: Decompression failed for %s, storing compressed data\n", __LINE__ - 12,file_header.filename);
+				fprintf(stderr, "%d: Warning: Decompression failed for %s, storing compressed data\n", __LINE__ - 12,file_header.filename);
 			}
 		} else {
 			/* Write uncompressed data */
 			size_t written = fwrite(compressed_data, 1, file_header.file_size, output_file);
 			if(written != file_header.file_size)
-				printErrNE("%d: Warning: Incomplete write for %s\n", __LINE__ - 2, file_header.filename);
+				fprintf(stderr, "%d: Warning: Incomplete write for %s\n", __LINE__ - 2, file_header.filename);
 		}
 
 		free(compressed_data);
@@ -180,7 +193,7 @@ int extract_archive(const char* archive_path, const char* output_dir, const char
 
 		/* Restore file permissions */
 		if(chmod(full_path, file_header.permissions) != 0)
-		    printErrNE("%d: Warning: Cannot set permissions for %s: %s\n", __LINE__ - 1, full_path, strerror(errno));
+		    fprintf(stderr, "%d: Warning: Cannot set permissions for %s: %s\n", __LINE__ - 1, full_path, strerror(errno));
 
 		/* Add extraction timestamp */
 		add_timestamp_to_file(full_path);
@@ -239,7 +252,7 @@ void list_archive_contents(const char* archive_path) {
 	for(int i = 0; i < arch_header.file_count; i++){
 		memset(&file_header, 0, sizeof(FileHeader));
 		if(fread(&file_header, sizeof(FileHeader), 1, archive) != 1){
-			printErrNE("%d: Error: Cannot read file header for file %d\n", __LINE__ - 1, i);
+			fprintf(stderr, "%d: Error: Cannot read file header for file %d\n", __LINE__ - 1, i);
 			break;
 		}
 
@@ -304,13 +317,13 @@ int verify_archive(const char* archive_path) {
 	for(int i = 0; i < arch_header.file_count; i++){
 		memset(&file_header, 0, sizeof(FileHeader));
 		if (fread(&file_header, sizeof(FileHeader), 1, archive) != 1) {
-			printErrNE("%d: Error: Cannot read file header for file %d\n", __LINE__ - 1, i);
+			fprintf(stderr, "%d: Error: Cannot read file header for file %d\n", __LINE__ - 1, i);
 			break;
 		}
 
 		/* Check if offset matches */
 		if (file_header.offset != current_offset) {
-			printErrNE("%d: Warning: File offset mismatch for %s\n", __LINE__ - 1, file_header.filename);
+			fprintf(stderr, "%d: Warning: File offset mismatch for %s\n", __LINE__ - 1, file_header.filename);
 		}
 
 		/* Skip file data */
@@ -332,4 +345,267 @@ int verify_archive(const char* archive_path) {
 	} else
 		printErr("%d: Archive verification failed: %d/%d files valid\n", __LINE__ - 4, valid_files, arch_header.file_count);
 	return 0;
+}
+
+/* Process directory recursively */
+void process_directory(const char* base_path, const char* rel_path, 
+                      FILE* archive, uint16_t* file_count, uint64_t* total_size, int vflag) {
+	char full_path[PATH_MAX];
+	if(strlen(rel_path) == 0)
+		snprintf(full_path, sizeof(full_path), "%s", base_path);
+	else
+		snprintf(full_path, sizeof(full_path), "%s/%s", base_path, rel_path);
+
+	DIR* dir = opendir(full_path);
+	if(!dir)
+		printErr("%d: Warning: Cannot open directory %s: %s\n", __LINE__, full_path, strerror(errno));
+
+	struct dirent* entry = {0};
+	for(;(entry = readdir(dir)) != NULL;){
+		/* Skip . and .. entries */
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) 
+			continue;
+
+		/* Build relative path */
+		char new_rel_path[PATH_MAX];
+		if(strlen(rel_path) == 0)
+			snprintf(new_rel_path, sizeof(new_rel_path), "%s", entry->d_name);
+		else
+			snprintf(new_rel_path, sizeof(new_rel_path), "%s/%s", rel_path, entry->d_name);
+
+		/* Build full path */
+		char entry_full_path[PATH_MAX];
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wformat-truncation"
+		snprintf(entry_full_path, sizeof(entry_full_path), "%s/%s", base_path, new_rel_path);
+#pragma GCC diagnostic pop
+
+		struct stat stat_buf;
+		if(stat(entry_full_path, &stat_buf) != 0){
+			fprintf(stderr, "%d: Warning: Cannot stat %s: %s\n", __LINE__ - 1, entry_full_path, strerror(errno));
+			continue;
+		}
+
+		if(S_ISDIR(stat_buf.st_mode))
+			/* Recursively process subdirectory */
+			process_directory(base_path, new_rel_path, archive, file_count, total_size, vflag);
+		else if(S_ISREG(stat_buf.st_mode))
+			/* Process regular file */
+			process_single_file(entry_full_path, new_rel_path, archive, file_count, total_size, &stat_buf, vflag);
+		else
+			printErr("%d: Error while handling files: %s", __LINE__ - 7, strerror(errno));
+	}
+    
+	closedir(dir);
+}
+
+/* Process single file for archiving */
+void process_single_file(const char* filepath, const char* rel_path, 
+                        FILE* archive, uint16_t* file_count,
+                        uint64_t* total_size, struct stat* stat_buf, int vflag) {
+	FILE* file = fopen(filepath, "rb");
+	if(!file)
+		printErr("%d: Warning: Cannot open file %s: %s\n", __LINE__ - 2, filepath, strerror(errno));
+    
+	/* Get file size safely */
+   	long file_size_long = getFileSize(file); 
+
+	if(file_size_long <= 0){
+		fclose(file);
+		fprintf(stdout, "Skipped: %s (empty file)\n", rel_path);
+		return;
+	}
+
+	size_t file_size = (size_t)file_size_long;
+    
+	/* Read file data */
+	uint8_t* file_data = malloc(file_size); //, sizeof(uint8_t));
+	if(!file_data){
+		fclose(file);
+		printErr("%d: Error: Memory allocation failed for %s: %s\n", __LINE__ -3, filepath, strerror(errno));
+	}
+    
+	size_t bytes_read = fread(file_data, 1, file_size, file);
+	fclose(file);
+    
+	if(bytes_read != file_size){
+		free(file_data);
+		fprintf(stderr, "%d: Error: Cannot read file %s: %s\n", __LINE__ - 5, filepath, strerror(errno));
+		return;
+	}
+    
+	/* Prepare file header */
+	FileHeader header = {0};
+	strncpy(header.filename, rel_path, sizeof(header.filename) - 1);
+	header.permissions = stat_buf->st_mode;
+	header.offset = *total_size;
+	header.algorithm = 1; /* PPM */
+    
+	uint8_t* compressed_data = NULL;
+	size_t compressed_size = 0;
+
+	compressed_size = ppm_compress(file_data, file_size, &compressed_data);
+    
+	/* Decide whether to use compressed or original data */
+	if(compressed_data && compressed_size > 0 && compressed_size < file_size){
+		header.file_size = compressed_size;
+		header.is_compressed = 1;
+		if(vflag == 1)
+			fprintf(stdout, "Processed: %s (PPM) %zu -> %zu bytes\n", rel_path, file_size, compressed_size);
+	} else {
+		header.file_size = file_size;
+		header.is_compressed = 0;
+		if(compressed_data)
+			free(compressed_data);
+		compressed_data = file_data;
+		compressed_size = file_size;
+		file_data = NULL;
+		if(vflag == 1 )
+			fprintf(stdout, "Processed: %s (store) %zu bytes\n", rel_path, file_size);
+	}
+    
+	/* Write to archive */
+	size_t header_written = fwrite(&header, sizeof(FileHeader), 1, archive);
+	size_t data_written = fwrite(compressed_data, 1, header.file_size, archive);
+
+	if (header_written != 1 || data_written != header.file_size)
+		fprintf(stderr, "%d: Error: Write failed for %s: %s\n", __LINE__, rel_path, strerror(errno));
+	else {
+		/* Update counters */
+		(*file_count)++;
+		*total_size += sizeof(FileHeader) + header.file_size;
+	}
+
+	/* Cleanup */
+	if (compressed_data != file_data)
+		free(compressed_data);
+	if (file_data)
+		free(file_data);
+}
+
+/* Create directory if it doesn't exist */
+int create_directory(const char* path){
+	struct stat st = {0};
+	if(stat(path, &st) == -1)
+		if(mkdir(path, 0755) != 0)
+			printErr("%d: Error: Cannot create directory %s: %s\n", __LINE__ -1,  path, strerror(errno));
+	return 0;
+}
+
+/* Create parent directories for file path */
+int create_parent_dirs(const char* filepath) {
+	char path[PATH_MAX];
+	strncpy(path, filepath, sizeof(path) - 1);
+	path[sizeof(path) - 1] = '\0';
+
+	char* slash = strrchr(path, '/');
+	if(slash){
+		*slash = '\0';
+		return create_directory(path);
+	}
+	return 0;
+}
+
+/* Add timestamp to file */
+void add_timestamp_to_file(const char* filepath) {
+	/* Update the file's modification time to current time */
+	struct utimbuf new_times;
+	new_times.actime = time(NULL);   /* access time */
+	new_times.modtime = time(NULL);  /* modification time */
+	utime(filepath, &new_times);
+}
+
+/* Simple but stable PPM implementation */
+size_t ppm_compress(const uint8_t* input, size_t input_size, uint8_t** output) {
+	if(input_size == 0 || !input || !output){
+		*output = NULL;
+		return 0;
+	}
+
+	/* Allocate with safe margin */
+	uint8_t* compressed = calloc((input_size + 8), sizeof(uint8_t));
+	if(!compressed){
+		*output = NULL;
+		return 0;
+	}
+
+	/* Store original size in header */
+	compressed[0] = (input_size >> 24) & 0xFF;
+	compressed[1] = (input_size >> 16) & 0xFF;
+	compressed[2] = (input_size >> 8) & 0xFF;
+	compressed[3] = input_size & 0xFF;
+
+	/* Simple compression: remove consecutive duplicates */
+	size_t comp_index = 4;
+
+	for(size_t i = 0;i < input_size;){
+		uint8_t current = input[i];
+		size_t count = 1;
+
+		/* Count consecutive identical bytes */
+		for(;i + count < input_size && input[i + count] == current && count < 255; count++);
+
+		if(count > 3){
+			/* Encode run */
+			compressed[comp_index++] = current;
+			compressed[comp_index++] = current; /* Marker */
+			compressed[comp_index++] = (uint8_t)count;
+			i += count;
+		} else
+			/* Copy literal */
+			for(size_t j = 0; j < count; j++)
+				compressed[comp_index++] = input[i++];
+	}
+    
+	/* Check if compression actually helped */
+	if (comp_index >= input_size) {
+		/* Compression didn't help - store original */
+		free(compressed);
+		*output = NULL;
+		return 0;
+	}
+
+	*output = compressed;
+	return comp_index;
+}
+
+size_t ppm_decompress(const uint8_t* input, size_t input_size, uint8_t** output) {
+	if (input_size < 4 || !input || !output) {
+		*output = NULL;
+		return 0;
+	}
+    
+	/* Read original size from header */
+	size_t original_size = (input[0] << 24) | (input[1] << 16) | (input[2] << 8) | input[3];
+
+	if (original_size == 0) {
+		*output = NULL;
+		return 0;
+	}
+
+	uint8_t* decompressed = malloc(original_size);
+	if (!decompressed) {
+		*output = NULL;
+		return 0;
+	}
+
+	size_t decomp_index = 0;
+	size_t comp_index = 4;
+
+	for(;comp_index < input_size && decomp_index < original_size;){
+		if (comp_index + 2 < input_size && input[comp_index] == input[comp_index + 1]) {
+			/* Decode run */
+			uint8_t value = input[comp_index];
+			uint8_t count = input[comp_index + 2];
+
+			for (uint8_t j = 0; j < count && decomp_index < original_size; j++)
+				decompressed[decomp_index++] = value;
+			comp_index += 3;
+		} else
+			/* Copy literal */
+			decompressed[decomp_index++] = input[comp_index++];
+	}
+
+	*output = decompressed;
+	return decomp_index;
 }
