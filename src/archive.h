@@ -25,7 +25,11 @@
 
 /* File header structure */
 typedef struct {
+<<<<<<< HEAD
 	char filename[BUFFER];       /* original file name */
+=======
+	char filename[256];       /* original file name */
+>>>>>>> suckless
 	uint64_t file_size;       /* file size in bytes */
 	uint32_t permissions;     /* file permissions */
 	uint64_t offset;          /* offset in archive */

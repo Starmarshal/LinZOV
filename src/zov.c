@@ -124,12 +124,12 @@ int main(int argc, char* argv[]) {
 		printErr("Usage: zov <flags> <argument> ...\n");
 
 	char directory[BUFFER];
-	if(argc >= 3 && state == 1)
+	if(argc <= 3 && state == 1)
 		strcpy(directory, ".");
-	else if(state == 2)
-		strcpy(directory, argv[3]);
-	else
+	else if(argc == 3)
 		strcpy(directory, argv[2]);
+	else
+		strcpy(directory, argv[3]);
 	const char* archive = argv[2];
 
 	/* Handle archive commands */

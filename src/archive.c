@@ -1,6 +1,5 @@
 #include "archive.h"
 
-static int is_archive_file(const char* filename);
 static void process_directory(const char* base_path, const char* rel_path, 
                       FILE* archive, uint16_t* file_count, uint64_t* total_size, int vflag);
 static void process_single_file(const char* filepath, const char* rel_path, 
@@ -11,8 +10,6 @@ static int create_parent_dirs(const char* filepath);
 static void add_timestamp_to_file(const char* filepath);
 static size_t ppm_compress(const uint8_t* input, size_t input_size, uint8_t** output);
 static size_t ppm_decompress(const uint8_t* input, size_t input_size, uint8_t** output);
-static PPMModel* ppm_create_model(int order, size_t memory_limit);
-static void ppm_free_model(PPMModel* model);
 
 /* Create archive from directory */
 int create_archive(const char* dir_path, const char* archive_path, const char* password, int vflag){
@@ -267,21 +264,13 @@ void list_archive_contents(const char* archive_path) {
 		snprintf(perm_str, sizeof(perm_str), "%04o", file_header.permissions & 0777);
 
 		printf("%-50s %-12lu %-10s %s\n", file_header.filename,(unsigned long)file_header.file_size,
-			file_header.is_compressed ? "PPM" : "PPM", perm_str);
+			file_header.is_compressed ? "PPM" : "NO", perm_str);
 	}
 
 	printf("-------------------------------------------------- ------------ ---------- ----------\n");
 	printf("%-50s %-12lu %-10s\n", "TOTAL", (unsigned long)total_files_size, "");
 
 	fclose(archive);
-}
-
-/* Check if file is archive */
-int is_archive_file(const char* filename) {
-	if (!filename) return 0;
-
-	const char* ext = strrchr(filename, '.');
-	return (ext && (strcmp(ext, ".zov") == 0 || strcmp(ext, ".fem") == 0));
 }
 
 /* Verify archive integrity */
@@ -449,14 +438,13 @@ void process_single_file(const char* filepath, const char* rel_path,
 		compressed_size = ppm_compress(file_data, file_size, &compressed_data);
 	}
 
-    
 	/* Decide whether to use compressed or original data */
 	if(compressed_data && compressed_size > 0 && compressed_size < file_size){
 		header.file_size = compressed_size;
 		header.is_compressed = 1;
 		if(vflag == 1)
 			fprintf(stdout, "Processed: %s (PPM) %zu -> %zu bytes\n", rel_path, file_size, compressed_size);
-	} else {
+	} else{
 		header.file_size = file_size;
 		header.is_compressed = 0;
 		if(compressed_data)
@@ -467,7 +455,7 @@ void process_single_file(const char* filepath, const char* rel_path,
 		if(vflag == 1 )
 			fprintf(stdout, "Processed: %s (store) %zu bytes\n", rel_path, file_size);
 	}
-    
+
 	/* Write to archive */
 	size_t header_written = fwrite(&header, sizeof(FileHeader), 1, archive);
 	size_t data_written = fwrite(compressed_data, 1, header.file_size, archive);
